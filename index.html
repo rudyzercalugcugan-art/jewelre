@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Birthday Quiz Just for You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+    --bg: #e8dcfb;
+    --card: #ffffff;
+    --ink: #4b3a7a;
+    --muted: #7e6caa;
+    --lilac: #b79cf0;
+    --deep: #8c6fe0;
+    --pink: #ffd3e8;
+    --butter: #ffe69a;
+    --good: #b5ecd0;
+    --good-edge: #6fcf9f;
+    --bad: #ffe3f0;
+    --bad-edge: #eab0d6;
+  }
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; margin: 0; }
+  body {
+    background-color: var(--bg);
+    background-image: radial-gradient(#f6effe 2.5px, transparent 3px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    font-family: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 18px;
+  }
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  .game {
+    width: 100%; max-width: 480px;
+    background: var(--card);
+    border: 4px solid var(--lilac);
+    border-radius: 32px;
+    padding: 26px 22px 18px;
+    box-shadow: 0 8px 0 var(--lilac), 0 18px 30px rgba(140,111,224,.25);
+    text-align: center;
+  }
+  .screen { display: none; }
+  .screen.on { display: block; animation: pop .5s cubic-bezier(.2,.9,.3,1.2) both; }
+  .screen.leaving { animation: out .4s ease-in both; }
+  @keyframes pop { from { opacity: 0; transform: translateY(18px) scale(.94); } to { opacity: 1; transform: none; } }
+  @keyframes out { to { opacity: 0; transform: scale(1.08) translateY(-14px); } }
+
+  h1 { font-size: 2.2rem; line-height: 1.15; margin: 0 0 12px; font-weight: 700; color: var(--deep); }
+  h2 { font-size: 1.45rem; line-height: 1.3; margin: 0 0 20px; font-weight: 600; }
+  p { font-size: 1.1rem; line-height: 1.5; color: var(--muted); margin: 0 0 24px; }
+  .big { font-size: 4rem; margin-bottom: 6px; animation: bob 2.4s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-8px) rotate(-4deg); } }
+
+  .btn {
+    display: block; width: 100%;
+    font: inherit; font-size: 1.1rem; font-weight: 600;
+    color: var(--ink); background: #f5efff;
+    border: 3px solid var(--lilac); border-radius: 999px;
+    padding: 13px 20px; margin-bottom: 12px; text-align: center;
+    cursor: pointer; box-shadow: 0 4px 0 var(--lilac);
+    transition: transform .08s, box-shadow .08s, background .15s;
+  }
+  .btn:hover:not(:disabled) { background: #ece2ff; }
+  .btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--lilac); }
+  .btn:focus-visible { outline: 3px solid var(--deep); outline-offset: 3px; }
+  .btn.main { background: var(--pink); border-color: #e9a9d2; box-shadow: 0 4px 0 #e9a9d2; color: #6a2d6b; }
+  .btn.good { background: var(--good); border-color: var(--good-edge); box-shadow: 0 4px 0 var(--good-edge); }
+  .btn.bad { background: var(--bad); border-color: var(--bad-edge); box-shadow: 0 4px 0 var(--bad-edge); }
+  .btn:disabled { cursor: default; }
+  [hidden] { display: none !important; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; color: var(--muted); font-weight: 600; }
+  .score { background: var(--butter); color: #6b5410; padding: 3px 12px; border-radius: 999px; }
+  .bar { height: 14px; background: #efe7fc; border-radius: 99px; overflow: hidden; margin-bottom: 22px; border: 2px solid var(--lilac); }
+  .bar i { display: block; height: 100%; width: 0; background: var(--pink); border-radius: 99px; transition: width .4s; }
+
+  .hintbtn { font: inherit; font-size: 1rem; font-weight: 600; color: #6b5410; background: var(--butter); border: 2px solid #f0c95a; border-radius: 999px; padding: 6px 16px; margin: -8px 0 16px; cursor: pointer; }
+  #hintBox { background: #fff8de; border: 3px dashed #f0c95a; border-radius: 18px; padding: 10px 14px; margin: -8px 0 16px; color: #6b5410; font-weight: 600; }
+  #feedback { min-height: 3.2em; font-size: 1.1rem; margin: 6px 0 12px; }
+  .final-score { display: inline-block; font-size: 1.2rem; background: var(--butter); color: #6b5410; font-weight: 700; padding: 6px 16px; border-radius: 999px; margin-bottom: 16px; }
+  .letter { background: #f7f1ff; border: 3px dashed var(--lilac); border-radius: 22px; padding: 20px; font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px; white-space: pre-line; text-align: left; }
+  img.pic { width: 100%; border-radius: 22px; border: 4px solid var(--lilac); margin-bottom: 16px; display: block; }
+
+  #lockMsg { min-height: 1.6em; margin: 0 0 10px; color: #a35bb8; font-weight: 600; }
+
+  .pin { display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; }
+  .pin span {
+    width: 52px; height: 62px; display: flex; align-items: center; justify-content: center;
+    font-size: 1.9rem; font-weight: 700; color: var(--deep);
+    background: #f7f1ff; border: 3px solid var(--lilac); border-radius: 16px;
+  }
+  .pin span.on { background: var(--pink); border-color: #e9a9d2; }
+  .pin.ok span { background: var(--good); border-color: var(--good-edge); animation: hop .5s ease both; }
+  .pin.ok span:nth-child(2) { animation-delay: .08s; }
+  .pin.ok span:nth-child(3) { animation-delay: .16s; }
+  .pin.ok span:nth-child(4) { animation-delay: .24s; }
+  @keyframes hop { 40% { transform: translateY(-12px); } }
+  #lockMsg.ok { color: #2f9e6b; }
+  #lockIcon.open { animation: none; transform: scale(1.25) rotate(-8deg); transition: transform .3s; }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 270px; margin: 6px auto 10px; }
+  .key {
+    font: inherit; font-size: 1.6rem; font-weight: 600; color: var(--ink);
+    background: #f5efff; border: 3px solid var(--lilac); border-radius: 50%;
+    aspect-ratio: 1; cursor: pointer; box-shadow: 0 4px 0 var(--lilac);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--lilac); }
+  .key:focus-visible { outline: 3px solid var(--deep); outline-offset: 3px; }
+  .key.fn { background: var(--butter); border-color: #f0c95a; box-shadow: 0 4px 0 #f0c95a; font-size: 1.4rem; }
+  .shake { animation: shake .4s; }
+  @keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+
+  .avatar { width: 100px; height: 100px; object-fit: contain; margin-bottom: 8px; animation: bob 2.4s ease-in-out infinite; }
+  #start .avatar { width: 100px; height: 100px; }
+  #quiz .avatar { width: 120px; height: 120px; margin-bottom: 6px; }
+
+  @media (prefers-reduced-motion: reduce) { .bar i, .btn { transition: none; } .big, .screen.on, .screen.leaving, .pin.ok span { animation: none; } }
+</style>
+</head>
+<body>
+<div id="bg" aria-hidden="true"></div>
+<canvas id="confetti"></canvas>
+
+<main class="game">
+
+  <section id="lock" class="screen on">
+    <div class="big" id="lockIcon">🔒</div>
+    <h1 id="lockTitle">Enter the passkey</h1>
+    <p id="lockHint"></p>
+    <div class="pin" id="pin" aria-live="polite"></div>
+    <div id="lockMsg" aria-live="polite"></div>
+    <div class="keypad" id="keypad"></div>
+  </section>
+
+  <section id="start" class="screen">
+    <img class="avatar" src="elgato.jpg">
+    <h1 id="startTitle"></h1>
+    <p id="startText"></p>
+    <button class="btn main" id="startBtn">Start	</button>
+  </section>
+
+    <section id="quiz" class="screen">
+    <div class="top"><span id="count"></span><span class="score" id="score"></span></div>
+    <div class="bar"><i id="barFill"></i></div>
+    <img class="avatar" id="qImg" alt="">
+    <h2 id="question"></h2>
+    <button class="hintbtn" id="hintBtn">💡Hint here babyy</button>
+    <div id="hintBox" hidden></div>
+    <div id="answers"></div>
+    <div id="feedback" aria-live="polite"></div>
+    <button class="btn main" id="nextBtn" hidden>Next question</button>
+  </section>
+
+  <section id="auth" class="screen">
+    <img class="avatar" src="bouquet.jpg" alt="">
+    <h1>Authentication Complete! ikaw jud diay babyy😘</h1>
+    <button class="btn main" id="surpriseBtn">See my surprise</button>
+  </section>
+
+  <section id="end" class="screen">
+    <div class="big">🎂</div>
+    <h1 id="endTitle"></h1>
+    <div class="letter" id="letter"></div>
+    <!-- Optional photo: put a file named photo.jpg next to index.html and uncomment the next line -->
+    <!-- <img class="pic" src="photo.jpg" alt="Us"> -->
+    <button class="btn main" id="againBtn">Play again</button>
+  </section>
+
+</main>
+
+<script>
+/* ============ EDIT THIS PART ============ */
+const CONFIG = {
+  herName: "babyy",
+  password: "032808",
+  passwordHint: "Hint: password nimo, a number that's special to you.",
+  startText: "Answeri sah ni, kung baby ba jud nako ni-.-",
+  endTitle: "Happy Birthday Jewel!💜",
+  letter:
+`Write your message here.
+
+Tell her what she means to you, what you love about her, and what you're excited to do together this year.
+
+Love,
+[Your name]`
+};
+
+// answer = the index of the correct option (0 is the first option).
+// right / wrong = what the game says after she answers.
+const QUESTIONS = [
+  { q: "When did I court you?",
+    options: ["Aug 9", "Aug 5", "Aug 4", "Dec 22"],
+    answer: 1,
+    img: "question.jpg",
+    hint: "(four letters daw, always nako malimtan)",
+    right: "WAWS! love jud ko nimo sah:>",
+    wrong: "NAHH! naownsa naman ne:< pagbigyan kay palangga" },
+  { q: "Where is our favorite place to date/hangout?",
+    options: ["Freedom", "Boule", "Sibulan", "Dagat"],
+    answer: 0,
+    img: "cuddle.jpg",
+    hint: "(malipayon ta sige ana nga place:>)",
+    right: "KAHH freedom date all the way jud.",
+    wrong: "Halah sya pero nuan I like that place pd babyy." },
+  { q: "What's my go-to snack when we watch movies?",
+    options: ["Popcorn", "Chips", "Chocolate", "Whatever you're eating"],
+    answer: 3,
+    img: "question.jpg",
+    right: "Correct! I always steal yours.",
+    wrong: "Close, but it's whatever you're eating." },
+  { q: "Gwapo ko or dili? hihihi",
+    options: ["Yess ofc", "Oo syempre", "Superrr jud", "All of the above"],
+    answer: "all",
+    img: "gwapo.jpg",
+    hint: "(walay No or Dili kay love man ko nimo)",
+    right: "Yieee ibog kayka nako.(Sakto tanan diays tanan answer)",
+    wrong: "Yieee ibog kayka nako.(Sakto tanan diays tanan answer)" },
+];
+/* ============ END OF EDIT AREA ============ */
+
+const $ = id => document.getElementById(id);
+let i = 0, score = 0, locked = false;
+
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
+  $(id).classList.add("on");
+}
+
+$("startTitle").textContent = "Authentication💜";
+$("startText").textContent = CONFIG.startText;
+$("endTitle").textContent = CONFIG.endTitle;
+$("letter").textContent = CONFIG.letter;
+
+/* Floating background: tiny hearts, stars and wiggly lines along both sides of the card */
+(function addBgStyles() {
+  const st = document.createElement("style");
+  st.textContent = `
+    #bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
+    .game { position: relative; z-index: 1; }
+    .fx { position: absolute; bottom: -50px; opacity: 0; line-height: 1; animation: floatUp linear infinite; }
+    .fx span { display: inline-block; }
+    .fx-heart { animation: beat 1.6s ease-in-out infinite; }
+    .fx-star { animation: twinkle 2.2s ease-in-out infinite; }
+    .fx-wave { animation: wiggle 2s ease-in-out infinite; }
+    @keyframes floatUp {
+      0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+      10% { opacity: .65; }
+      50% { transform: translate(var(--dx), -55vh) rotate(var(--rot)); }
+      90% { opacity: .65; }
+      100% { transform: translate(calc(var(--dx) * -1), -120vh) rotate(calc(var(--rot) * 2)); opacity: 0; }
+    }
+    @keyframes beat { 50% { transform: scale(1.35); } }
+    @keyframes twinkle { 50% { transform: scale(.5) rotate(25deg); opacity: .5; } }
+    @keyframes wiggle { 0%, 100% { transform: rotate(-10deg) translateX(-4px); } 50% { transform: rotate(10deg) translateX(4px); } }
+  `;
+  document.head.appendChild(st);
+})();
+
+function buildBg() {
+  const bg = $("bg");
+  bg.innerHTML = "";
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const vw = document.documentElement.clientWidth;
+  const card = document.querySelector(".game").getBoundingClientRect();
+  const colors = ["#ffb6d3", "#b79cf0", "#ffe69a", "#c9b6ff", "#ffc8e0"];
+  const kinds = ["heart", "star", "wave", "heart", "star"];
+  const wave = '<svg viewBox="0 0 46 14" width="3.2em" height="1em" aria-hidden="true"><path d="M2 7 Q8 0 14 7 T26 7 T38 7 T46 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+  const small = vw < 600;
+  const perSide = small ? 7 : 12;
+  const lane = small ? 40 : 110;               // how far from the box the shapes may float
+  for (let n = 0; n < perSide * 2; n++) {
+    const right = n % 2 === 1;                 // even = left side, odd = right side
+    const kind = kinds[n % kinds.length];
+    const size = small ? 9 + Math.random() * 7 : 12 + Math.random() * 14;
+    const w = kind === "wave" ? size * 3.2 : size;
+    const lo = Math.max(0, card.left - lane);  // distance from the screen edge
+    const hi = Math.max(lo, card.left + 8 - w);
+    const d = lo + Math.random() * (hi - lo);
+    const x = right ? vw - d - w : d;          // the right side mirrors the left
+    const el = document.createElement("div");
+    el.className = "fx";
+    el.style.left = x + "px";
+    el.style.color = colors[Math.floor(Math.random() * colors.length)];
+    el.style.fontSize = size + "px";
+    el.style.animationDuration = (14 + Math.random() * 16) + "s";
+    el.style.animationDelay = (-Math.random() * 30) + "s";
+    el.style.setProperty("--dx", (Math.random() * 30 - 15) + "px");
+    el.style.setProperty("--rot", (Math.random() * 60 - 30) + "deg");
+    const inner = document.createElement("span");
+    inner.className = "fx-" + kind;
+    inner.innerHTML = kind === "heart" ? "♥" : kind === "star" ? "✦" : wave;
+    el.appendChild(inner);
+    bg.appendChild(el);
+  }
+}
+buildBg();
+let bgTimer;
+addEventListener("resize", () => { clearTimeout(bgTimer); bgTimer = setTimeout(buildBg, 250); });
+
+/* Passkey keypad */
+let code = "", busy = false;
+function drawPin() {
+  const n = CONFIG.password.length;
+  $("pin").innerHTML = "";
+  for (let k = 0; k < n; k++) {
+    const d = document.createElement("span");
+    if (code[k]) { d.textContent = code[k]; d.className = "on"; }
+    $("pin").appendChild(d);
+  }
+}
+function press(key) {
+  if (busy || !$("lock").classList.contains("on")) return;
+  $("lockMsg").textContent = "";
+  if (key === "del") { code = code.slice(0, -1); drawPin(); return; }
+  if (key === "ok") { check(); return; }
+  if (code.length < CONFIG.password.length) code += key;
+  drawPin();
+  if (code.length === CONFIG.password.length) setTimeout(check, 200);
+}
+function unlockAnimation() {
+  busy = true;
+  $("lockIcon").textContent = "🔓";
+  $("lockIcon").classList.add("open");
+  $("pin").classList.add("ok");
+  $("lockMsg").classList.add("ok");
+  $("lockTitle").textContent = "Unlocked💜";
+  $("lockHint").style.visibility = "hidden";
+  burst(0.7);
+  setTimeout(() => {
+    $("lock").classList.add("leaving");
+    setTimeout(() => {
+      show("start");
+      $("lock").classList.remove("leaving");
+      $("lockIcon").textContent = "🔒";
+      $("lockIcon").classList.remove("open");
+      $("pin").classList.remove("ok");
+      $("lockMsg").classList.remove("ok");
+      $("lockMsg").textContent = "";
+      $("lockTitle").textContent = "Enter the passkey";
+      $("lockHint").style.visibility = "";
+      code = ""; busy = false; drawPin();
+    }, reduce ? 0 : 400);
+  }, reduce ? 300 : 1100);
+}
+function check() {
+  if (code === CONFIG.password) { unlockAnimation(); return; }
+  $("lockMsg").textContent = "Engkk! Try again po💜";
+  const p = $("pin");
+  p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake");
+  code = ""; drawPin();
+}
+["1","2","3","4","5","6","7","8","9","","0","del"].forEach(k => {
+  if (k === "") { $("keypad").appendChild(document.createElement("div")); return; }
+  const b = document.createElement("button");
+  b.className = "key" + (k === "del" ? " fn" : "");
+  b.textContent = k === "del" ? "⌫" : k;
+  b.setAttribute("aria-label", k === "del" ? "Delete" : k);
+  b.addEventListener("click", () => press(k));
+  $("keypad").appendChild(b);
+});
+document.addEventListener("keydown", e => {
+  if (/^[0-9]$/.test(e.key)) press(e.key);
+  else if (e.key === "Backspace") press("del");
+  else if (e.key === "Enter") press("ok");
+});
+$("lockHint").textContent = CONFIG.passwordHint;
+drawPin();
+
+function load() {
+  const item = QUESTIONS[i];
+  locked = false;
+  $("count").textContent = "Question " + (i + 1) + " of " + QUESTIONS.length;
+  $("score").textContent = "💜 " + score;
+  $("barFill").style.width = (i / QUESTIONS.length * 100) + "%";
+  $("question").textContent = item.q;
+  $("qImg").hidden = !item.img;
+  if (item.img) $("qImg").src = item.img;
+  $("feedback").textContent = "";
+  $("nextBtn").hidden = true;
+  $("hintBox").hidden = true;
+  $("hintBtn").hidden = !item.hint;
+  const box = $("answers");
+  box.innerHTML = "";
+  item.options.forEach((text, n) => {
+    const b = document.createElement("button");
+    b.className = "btn";
+    b.textContent = text;
+    b.addEventListener("click", () => pick(n, b));
+    box.appendChild(b);
+  });
+}
+
+function pick(n, btn) {
+  if (locked) return;
+  locked = true;
+  const item = QUESTIONS[i];
+  const buttons = $("answers").children;
+  const all = item.answer === "all";
+  const ok = all || n === item.answer;
+  if (ok) score++;
+  btn.classList.add(ok ? "good" : "bad");
+  if (!all) buttons[item.answer].classList.add("good");
+  [...buttons].forEach(b => b.disabled = true);
+  $("hintBtn").hidden = true;
+  $("feedback").textContent = (ok ? "✅ " : "💗 ") + (ok ? item.right : item.wrong);
+  $("score").textContent = "💜 " + score;
+  $("nextBtn").textContent = i === QUESTIONS.length - 1 ? "Continue" : "Next question";
+  $("nextBtn").hidden = false;
+  if (ok) burst(0.25);
+}
+
+$("hintBtn").addEventListener("click", () => {
+  $("hintBox").textContent = "💡 " + QUESTIONS[i].hint;
+  $("hintBox").hidden = false;
+  $("hintBtn").hidden = true;
+});
+$("startBtn").addEventListener("click", () => { i = 0; score = 0; show("quiz"); load(); });
+$("nextBtn").addEventListener("click", () => {
+  if (!locked) return;
+  i++;
+  if (i < QUESTIONS.length) { load(); return; }
+  show("auth");
+  burst(0.7);
+});
+$("surpriseBtn").addEventListener("click", () => {
+  show("end");
+  burst(1);
+});
+$("againBtn").addEventListener("click", () => show("start"));
+
+/* Confetti */
+const cv = $("confetti"), cx = cv.getContext("2d");
+let bits = [], running = false;
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function size() { cv.width = innerWidth; cv.height = innerHeight; }
+addEventListener("resize", size); size();
+
+function burst(power) {
+  if (reduce) return;
+  const colors = ["#ffb6d3", "#b79cf0", "#ffe69a", "#b5ecd0", "#d9c8ff"];
+  const n = Math.round(140 * power);
+  for (let k = 0; k < n; k++) {
+    bits.push({
+      x: innerWidth / 2, y: innerHeight * 0.55,
+      vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 14 - 4,
+      s: Math.random() * 7 + 4, c: colors[k % colors.length],
+      r: Math.random() * 6, life: 0
+    });
+  }
+  if (!running) { running = true; requestAnimationFrame(tick); }
+}
+function tick() {
+  cx.clearRect(0, 0, cv.width, cv.height);
+  bits.forEach(p => {
+    p.vy += 0.35; p.x += p.vx; p.y += p.vy; p.r += 0.2; p.life++;
+    cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r);
+    cx.fillStyle = p.c; cx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+    cx.restore();
+  });
+  bits = bits.filter(p => p.y < innerHeight + 20 && p.life < 160);
+  if (bits.length) requestAnimationFrame(tick);
+  else { running = false; cx.clearRect(0, 0, cv.width, cv.height); }
+}
+</script>
+</body>
+</html>
