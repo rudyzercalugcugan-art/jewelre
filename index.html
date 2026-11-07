@@ -234,6 +234,10 @@ $("startText").textContent = CONFIG.startText;
 $("endTitle").textContent = CONFIG.endTitle;
 $("letter").textContent = CONFIG.letter;
 
+/* Preload pictures so they appear instantly */
+QUESTIONS.forEach(q => { if (q.img) new Image().src = q.img; });
+["elgato.jpg"].forEach(src => { new Image().src = src; });
+
 /* Floating background: tiny hearts, stars and wiggly lines along both sides of the card */
 (function addBgStyles() {
   const st = document.createElement("style");
